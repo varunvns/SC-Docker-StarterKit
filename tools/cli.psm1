@@ -195,6 +195,10 @@ function Install-Kit {
     if ((Test-Path $solutionFiles)) {
         Write-SuccessMessage "Copying solution and msbuild files for local docker setup..."
         Copy-Item $solutionFiles ".\" -Recurse -Force
+
+        Rename-Item ".\Directory.build.props.sample" "Directory.build.props"
+        Rename-Item ".\Directory.build.targets.sample" "Directory.build.targets"
+        Rename-Item ".\Docker.pubxml.sample" "Docker.pubxml"
     }
 
     if ($Topology -eq "xp0") {
