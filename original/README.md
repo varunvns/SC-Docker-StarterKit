@@ -1,4 +1,4 @@
-# Sitecore Docker Starter Kit
+# Sitecore Docker Examples
 
 This repository contains companion code for the [Sitecore Containers documentation](https://containers.doc.sitecore.com/). Together, these are meant to help you get started using [Docker](https://www.docker.com/) containers with Sitecore.
 

@@ -1,0 +1,25 @@
+version: "2.4"
+services:
+  # Some modules (like SXA) also require additions to the Solr image.
+  solr-init:
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp0-solr-init:${VERSION:-latest}
+    build:
+      context: ./build/solr-init
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp0-solr-init:${SITECORE_VERSION}
+        SXA_IMAGE: ${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:${SXA_VERSION}
+    depends_on:
+      solr:
+        condition: service_healthy
+    environment:
+      SITECORE_SOLR_CONNECTION_STRING: http://solr:8983/solr
+      SOLR_CORE_PREFIX_NAME: ${SOLR_CORE_PREFIX_NAME}
+
+  xconnect:
+    depends_on:
+      mssql:
+        condition: service_healthy
+      solr-init:
+          condition: service_started
+      solution:
+          condition: service_started
