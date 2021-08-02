@@ -11,8 +11,13 @@ Stop-Docker -TakeDown
 
 $solutionName = Read-ValueFromHost -Question "Please enter a valid solution name`n(Capital first letter, letters and numbers only, min. 3 char)" -ValidationRegEx "^[A-Z]([a-z]|[A-Z]|[0-9]){2}([a-z]|[A-Z]|[0-9])*$" -required
 Remove-Item ".\*.sln" -Force
-Remove-Item ".\Directory.build.*" -Force
-Remove-Item ".\Docker.pubxml" -Force
+if (Test-Path ".\Directory.build.props") {
+    Remove-Item ".\Directory.build.*" -Force
+}
+if (Test-Path ".\Docker.pubxml") {
+    Remove-Item ".\Docker.pubxml" -Force
+}
+
 $topology = Select-SitecoreTopology
 
 Write-Host "$($topology) selected..." -ForegroundColor Magenta
