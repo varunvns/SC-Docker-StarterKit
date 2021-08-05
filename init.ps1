@@ -18,9 +18,11 @@ if (Test-Path ".\Docker.pubxml") {
     Remove-Item ".\Docker.pubxml" -Force
 }
 
-$topology = Select-SitecoreTopology
+# $topology = Select-SitecoreTopology
 
-Write-Host "$($topology) selected..." -ForegroundColor Magenta
+$topology = "xp0"
+
+Write-Host "$($topology) topology applied by default. XP1 will be added in future" -ForegroundColor Magenta
 
 $addHorizon = Confirm -Question "Would you like to add Horizon to your docker setup?"
 $addSXA = Confirm -Question "Would you like to add SXA to your docker setup?"
