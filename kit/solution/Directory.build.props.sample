@@ -30,7 +30,7 @@
             ...
         </PropertyGroup>
         -->
-        <SitecoreRoleType>platform</SitecoreRoleType>
+        <SitecoreRoleType>website</SitecoreRoleType>
 
     </PropertyGroup>
 
