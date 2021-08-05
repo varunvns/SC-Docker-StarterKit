@@ -1,0 +1,52 @@
+version: "2.4"
+services:
+  redis:
+    isolation: ${ISOLATION}
+    image: ${SITECORE_DOCKER_REGISTRY}sitecore-redis:${SITECORE_VERSION}
+  cd:
+    isolation: ${ISOLATION}
+    image: ${REGISTRY}${COMPOSE_PROJECT_NAME}-xp1-cd:${VERSION:-latest}
+    build:
+      context: ./build/cd
+      args:
+        BASE_IMAGE: ${SITECORE_DOCKER_REGISTRY}sitecore-xp1-cd:${SITECORE_VERSION}
+        TOOLING_IMAGE: ${SITECORE_TOOLS_REGISTRY}sitecore-docker-tools-assets:${TOOLS_VERSION}
+        SOLUTION_IMAGE: ${REGISTRY}${COMPOSE_PROJECT_NAME}-solution:${VERSION:-latest}
+        #SXA_IMAGE
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      xconnect:
+        condition: service_started
+    entrypoint: powershell -Command "& C:\tools\entrypoints\iis\Development.ps1"
+    volumes:
+      - ${LOCAL_DEPLOY_PATH}\website:C:\deploy
+      - ${LOCAL_DATA_PATH}\cd:C:\inetpub\wwwroot\App_Data\logs
+      - ${HOST_LICENSE_FOLDER}:c:\license
+    environment:
+      Sitecore_AppSettings_instanceNameMode:define: default
+      Sitecore_ConnectionStrings_Security: Data Source=mssql;Initial Catalog=Sitecore.Core;User ID=sa;Password=${SQL_SA_PASSWORD}
+      Sitecore_ConnectionStrings_Web: Data Source=mssql;Initial Catalog=Sitecore.Web;User ID=sa;Password=${SQL_SA_PASSWORD}
+      Sitecore_ConnectionStrings_Messaging: Data Source=mssql;Initial Catalog=Sitecore.Messaging;User ID=sa;Password=${SQL_SA_PASSWORD}
+      Sitecore_ConnectionStrings_ExperienceForms: Data Source=mssql;Initial Catalog=Sitecore.ExperienceForms;User ID=sa;Password=${SQL_SA_PASSWORD}
+      Sitecore_ConnectionStrings_Exm.Master: Data Source=mssql;Initial Catalog=Sitecore.Exm.master;User ID=sa;Password=${SQL_SA_PASSWORD}
+      Sitecore_ConnectionStrings_Solr.Search: http://solr:8983/solr;solrCloud=true
+      Sitecore_ConnectionStrings_XConnect.Collection: http://xconnect
+      Sitecore_ConnectionStrings_Xdb.MarketingAutomation.Operations.Client: http://xconnect
+      Sitecore_ConnectionStrings_Xdb.MarketingAutomation.Reporting.Client: http://xconnect
+      Sitecore_ConnectionStrings_Xdb.ReferenceData.Client: http://xconnect
+      Sitecore_ConnectionStrings_Redis.Sessions: redis:6379,ssl=False,abortConnect=False
+      SITECORE_LICENSE_LOCATION: c:\license\license.xml
+      SOLR_CORE_PREFIX_NAME: ${SOLR_CORE_PREFIX_NAME}
+      MEDIA_REQUEST_PROTECTION_SHARED_SECRET: ${MEDIA_REQUEST_PROTECTION_SHARED_SECRET}
+      SITECORE_DEVELOPMENT_PATCHES: CustomErrorsOff
+    healthcheck:
+      test: ["CMD", "powershell", "-command", "C:/Healthchecks/Healthcheck.ps1"]
+      timeout: 300s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cd-secure.entrypoints=websecure"
+      - "traefik.http.routers.cd-secure.rule=Host(`${CD_HOST}`)"
+      - "traefik.http.routers.cd-secure.tls=true"
