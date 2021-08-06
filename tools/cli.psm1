@@ -182,7 +182,8 @@ function Install-Kit {
         [bool]$AddHorizon,
         [bool]$AddSXA,
         [bool]$AddSPS,
-        [bool]$AddCD
+        [bool]$AddCD,
+        [bool]$AddSMS
     )
 
     # $foldersRoot = Join-Path $StarterKitRoot "\docker\build\base"
@@ -204,7 +205,7 @@ function Install-Kit {
 
     if ($Topology -eq "xp0") {
         Copy-XP0Kit -DestinationFolder $DestinationFolder -AddCD $AddCD
-        Update-Files -DestinationFolder $DestinationFolder -AddHorizon $AddHorizon -AddSXA $AddSXA -AddSPS $AddSPS -AddCD $AddCD
+        Update-Files -DestinationFolder $DestinationFolder -AddHorizon $AddHorizon -AddSXA $AddSXA -AddSPS $AddSPS -AddCD $AddCD -AddSMS $AddSMS
     }
 }
 
@@ -219,7 +220,8 @@ function Update-Files {
         [bool]$AddHorizon,
         [bool]$AddSXA,
         [bool]$AddSPS,
-        [bool]$AddCD
+        [bool]$AddCD,
+        [bool]$AddSMS
     )
     if ($AddCD) {
         $cdCompose = "$((Join-Path $StarterKitRoot "\docker\docker-compose.xp0-cd.override.yml"))"
@@ -234,6 +236,28 @@ function Update-Files {
     if ($AddSPS) {
         Add-SPS -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
     }
+    if ($AddSMS) {
+        Add-SMS -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
+    }
+}
+
+function Add-SMS {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit"
+    )
+    Write-Host "Adding the Sitecore Management Services module in the setup..." -ForegroundColor Green
+    $fileToUpdate = Join-Path $DestinationFolder "\build\cm\Dockerfile"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SMS_IMAGE", "ARG SMS_IMAGE") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SMS_IMAGE", "FROM `${SMS_IMAGE} as sms") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#Sms_Module", "# Add SMS module`nCOPY --from=sms \module\cm\content .\") | Set-Content -Path $fileToUpdate
+
+    $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.override.yml"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SMS_IMAGE", "SMS_IMAGE: `${SITECORE_MODULE_REGISTRY}sitecore-management-services-xp1-assets:`${SMS_VERSION:-latest}") | Set-Content -Path $fileToUpdate
 }
 
 function Add-SPS {

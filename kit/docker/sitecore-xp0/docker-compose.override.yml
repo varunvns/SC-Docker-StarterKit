@@ -65,6 +65,7 @@ services:
                 #SXA_IMAGE
                 #HORIZON_RESOURCES_IMAGE
                 #SPS_ASSETS
+                #SMS_IMAGE
         depends_on:
             - solution
         volumes:
