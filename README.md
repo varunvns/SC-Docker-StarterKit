@@ -22,3 +22,5 @@ Start with the [Sitecore Containers documentation](https://containers.doc.siteco
 Beyond that, for usage questions regarding Docker Examples installation or code, or general questions about Sitecore Containers, please utilize [Sitecore Stackexchange](https://sitecore.stackexchange.com/) or [#docker](https://sitecorechat.slack.com/messages/docker) on [Sitecore Community Slack](https://sitecore.chat/).
 
 You can use GitHub to submit [issues](https://github.com/Sitecore/docker-examples/issues/new) for Docker Examples, but please do not submit usage questions.
+
+Modules: https://doc.sitecore.com/en/developers/101/developer-tools/sitecore-module-reference.html#sitecore-management-services

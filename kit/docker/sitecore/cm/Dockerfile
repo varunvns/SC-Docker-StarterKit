@@ -7,6 +7,7 @@ ARG SOLUTION_IMAGE
 #ARG_SXA_IMAGE
 #ARG_HORIZON_RESOURCES_IMAGE
 #ARG_SPS_ASSETS
+#ARG_SMS_IMAGE
 
 FROM ${SOLUTION_IMAGE} as solution
 FROM ${TOOLING_IMAGE} as tooling
@@ -14,6 +15,7 @@ FROM ${SPE_IMAGE} as spe
 #FROM_SXA_IMAGE
 #FROM_SPS_ASSETS
 #FROM_HORIZON_RESOURCES_IMAGE
+#FROM_SMS_IMAGE
 FROM ${BASE_IMAGE}
 
 
@@ -32,6 +34,8 @@ COPY --from=spe \module\cm\content .\
 #Horizon_Module
 
 #Sps_Module
+
+#Sms_Module
 
 # Copy solution website files
 COPY --from=solution \artifacts\website\ .\

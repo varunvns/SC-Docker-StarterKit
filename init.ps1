@@ -24,11 +24,11 @@ $topology = "xp0"
 
 Write-Host "$($topology) topology applied by default. XP1 will be added in future" -ForegroundColor Magenta
 
-$addHorizon = Confirm -Question "Would you like to add Horizon to your docker setup?"
-$addSXA = Confirm -Question "Would you like to add SXA to your docker setup?"
-$addSPS = Confirm -Question "Would you like to add Sitecore Publishing Service to your docker setup?"
-# $addCD = Confirm -Question "Would you like to add CD role to your docker setup? If you add CD in the XP0 topology it will also add the redis image which is required for CD to work."
-# Write-Host $addHorizon
+$addHorizon = Confirm -Question "Would you like to add Horizon module to your docker setup?"
+$addSXA = Confirm -Question "Would you like to add SXA module to your docker setup?"
+$addSPS = Confirm -Question "Would you like to add Sitecore Publishing Service module to your docker setup?"
+$addSMS = Confirm -Question "Would you like to add Sitecore Management Services module to your docker setup?"
+
 $addCD = $False
 if ($topology -eq "xp0") {
     $addCD = Confirm -Question "Would you like to add CD role to your docker setup? If you add CD in the XP0 topology it will also add the redis image which is required for CD to work."
@@ -36,7 +36,7 @@ if ($topology -eq "xp0") {
 
 # Write-Host $addCD
 
-Install-Kit -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $addSPS -AddCD $addCD
+Install-Kit -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $addSPS -AddCD $addCD -AddSMS $addSMS
 Rename-SolutionFile $solutionName
 Install-SitecoreDockerTools
 
