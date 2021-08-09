@@ -209,6 +209,38 @@ function Install-Kit {
     }
 }
 
+function Upgrade {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Topology,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit",
+        [bool]$AddHorizon,
+        [bool]$AddSXA,
+        [bool]$AddSPS,
+        [bool]$AddCD,
+        [bool]$AddSMS
+    )
+    Write-Host "Upgrading your existing docker preset..." -ForegroundColor Green
+    Remove-DataFiles
+    if ($AddHorizon) {
+        if ($AddHorizon) {
+            Add-Horizon -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
+            Push-Location ".\docker"
+            $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
+            Set-EnvFileVariable "ADD_HORIZON" -Value "true"
+            Set-EnvFileVariable "HRZ_HOST" -Value "hrz.$($hostDomain)"
+            Pop-Location
+        }
+    }
+}
+
 function Update-Files {
     param(
         [ValidateNotNullOrEmpty()]
@@ -465,13 +497,15 @@ function Initialize-EnvFile {
         [bool]$AddHorizon,
         [bool]$AddSXA,
         [bool]$AddSPS,
-        [bool]$AddCD
+        [bool]$AddCD,
+        [bool]$AddSMS
     )
     Push-Location ".\docker"
     Set-EnvFileVariable "COMPOSE_PROJECT_NAME" -Value $SolutionName.ToLower()
     Set-EnvFileVariable "HOST_LICENSE_FOLDER" -Value ".\license"
     Set-EnvFileVariable "HOST_DOMAIN"  -Value $hostDomain
     Set-EnvFileVariable "CM_HOST" -Value "cm.$($hostDomain)"
+    Set-EnvFileVariable "TOPOLOGY" -Value $Topology
     if ($Topology -eq "xp1") {
         Set-EnvFileVariable "CD_HOST" -Value "cd.$($hostDomain)"
     }
@@ -485,6 +519,9 @@ function Initialize-EnvFile {
     }
     if ($AddSPS) {
         Set-EnvFileVariable "ADD_SPS" -Value "true"
+    }
+    if ($AddSMS) {
+        Set-EnvFileVariable "ADD_SMS" -Value "true"
     }
     if ($AddCD) {
         Set-EnvFileVariable "ADD_CD" -Value "true"
@@ -604,4 +641,15 @@ function Stop-Docker {
         }
     }
     Pop-Location
+}
+
+function Remove-DataFiles {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string] 
+        $DockerRoot = ".\docker"
+    )
+    Write-Host "Deleting database files from $DockerRoot\data\mssql directory..." -ForegroundColor Red
+    $mssqlPath = Join-Path $DockerRoot "\data\mssql\*"
+    Remove-Item $mssqlPath -Exclude ".gitkeep" -Force
 }

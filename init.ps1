@@ -5,7 +5,7 @@ Import-Module -Name (Join-Path $PSScriptRoot "tools\cli") -Force
 Clear-Host
 
 Write-Host "Stopping the environment..." -ForegroundColor DarkYellow
-Stop-Docker -TakeDown
+Stop-Docker -TakeDown -PruneSystem
 
 # Initialize-Folder-Structure
 
@@ -49,7 +49,7 @@ do {
 
 Copy-Item (Join-Path $licenseFolderPath "license.xml") ".\docker\license\"
 Write-Host "Copied license.xml to .\docker\license\" -ForegroundColor Magenta
-Initialize-EnvFile -SolutionName $solutionName -HostDomain $hostDomain -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $AddSPS -AddCD $addCD
+Initialize-EnvFile -SolutionName $solutionName -HostDomain $hostDomain -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $AddSPS -AddCD $addCD -AddSMS $addSMS
 
 Initialize-HostNames $hostDomain
 
