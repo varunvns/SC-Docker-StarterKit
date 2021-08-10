@@ -238,12 +238,31 @@ function Upgrade {
         Pop-Location
     }
     if ($AddCD) {
-        Add-CD
+        $hasSXA = $false
+        if ($AddSXA -or (Get-EnvValueByKey "ADD_SXA" -eq "true")) {
+            $hasSXA = $true
+        }
+        Add-CD -HasSXA $hasSXA
         Push-Location ".\docker"
         $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
         Set-EnvFileVariable "ADD_CD" -Value "true"
         Set-EnvFileVariable "CD_HOST" -Value "cd.$($hostDomain)"
         Pop-Location
+    }
+    if ($AddSXA) {
+        Write-Host "Adding SXA module to the docker preset..." -ForegroundColor Green
+        Add-SXA -HorizonAdded $AddHorizon -AddCD $AddCD
+        Set-EnvFileVariable "ADD_SXA" -Value "true"
+    }
+    if ($AddSPS) {
+        Write-Host "Adding SPS module to the docker preset..." -ForegroundColor Green
+        Add-SPS
+        Set-EnvFileVariable "ADD_SPS" -Value "true"
+    }
+    if ($AddSMS) {
+        Write-Host "Adding SMS (Sitecore Management Services) module to the docker preset..." -ForegroundColor Green
+        Add-SMS
+        Set-EnvFileVariable "ADD_SMS" -Value "true"
     }
     Write-Host "Upgrade is done..." -ForegroundColor Green
 }
@@ -255,7 +274,8 @@ function Add-CD {
         $DestinationFolder = ".\docker",
         [ValidateNotNullOrEmpty()]
         [string]
-        $StarterKitRoot = ".\kit"
+        $StarterKitRoot = ".\kit",
+        [bool]$HasSXA = $false
     )
     Write-Host "Adding CD role to the docker preset..." -ForegroundColor Green
     $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
@@ -265,6 +285,10 @@ function Add-CD {
     Copy-Item $path $buildDirectoryPath -Force -Recurse
     $cdCompose = "$((Join-Path $StarterKitRoot "\docker\docker-compose.xp0-cd.override.yml"))"
     Copy-Item $cdCompose $DestinationFolder -Force
+
+    if ($HasSXA) {
+        Update-CDFiles
+    }
 }
 
 function Update-Files {
@@ -375,6 +399,23 @@ function Add-Horizon {
     Copy-Item $hrzCompose $DestinationFolder -Force
 }
 
+function Update-CDFiles {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit"
+    )
+    $fileToUpdate = Join-Path $DestinationFolder "\build\cd\Dockerfile"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cd\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.xp0-cd.override.yml"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+}
+
 function Add-SXA {
     param(
         [ValidateNotNullOrEmpty()]
@@ -393,12 +434,7 @@ function Add-SXA {
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
 
     if ($AddCD) {
-        $fileToUpdate = Join-Path $DestinationFolder "\build\cd\Dockerfile"
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cd\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
-        $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.xp0-cd.override.yml"
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+        Update-CDFiles
     }
 
     $fileToUpdate = Join-Path $DestinationFolder "\build\mssql\Dockerfile"
