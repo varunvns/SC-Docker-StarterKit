@@ -230,15 +230,41 @@ function Upgrade {
     Write-Host "Upgrading your existing docker preset..." -ForegroundColor Green
     Remove-DataFiles
     if ($AddHorizon) {
-        if ($AddHorizon) {
-            Add-Horizon -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
-            Push-Location ".\docker"
-            $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
-            Set-EnvFileVariable "ADD_HORIZON" -Value "true"
-            Set-EnvFileVariable "HRZ_HOST" -Value "hrz.$($hostDomain)"
-            Pop-Location
-        }
+        Add-Horizon -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
+        Push-Location ".\docker"
+        $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
+        Set-EnvFileVariable "ADD_HORIZON" -Value "true"
+        Set-EnvFileVariable "HRZ_HOST" -Value "hrz.$($hostDomain)"
+        Pop-Location
     }
+    if ($AddCD) {
+        Add-CD
+        Push-Location ".\docker"
+        $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
+        Set-EnvFileVariable "ADD_CD" -Value "true"
+        Set-EnvFileVariable "CD_HOST" -Value "cd.$($hostDomain)"
+        Pop-Location
+    }
+    Write-Host "Upgrade is done..." -ForegroundColor Green
+}
+
+function Add-CD {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit"
+    )
+    Write-Host "Adding CD role to the docker preset..." -ForegroundColor Green
+    $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
+    $buildDirectoryPath = "$DestinationFolder\build"
+    $path = "$((Join-Path $foldersRoot "cd"))"
+    Write-Host "Copying $($path) to $buildDirectoryPath" -ForegroundColor Green
+    Copy-Item $path $buildDirectoryPath -Force -Recurse
+    $cdCompose = "$((Join-Path $StarterKitRoot "\docker\docker-compose.xp0-cd.override.yml"))"
+    Copy-Item $cdCompose $DestinationFolder -Force
 }
 
 function Update-Files {
