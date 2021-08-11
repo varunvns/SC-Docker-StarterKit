@@ -44,7 +44,7 @@ $hostDomain = "$($solutionName.ToLower()).localhost"
 $hostDomain = Read-ValueFromHost -Question "Domain hostname (press enter for $($hostDomain))" -DefaultValue $hostDomain -Required
 
 do {
-    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (press enter for .\License\)" -DefaultValue ".\License\" -Required
+    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (press enter for c:\sitecore\)" -DefaultValue "c:\sitecore\" -Required
 } while (!(Test-Path (Join-Path $licenseFolderPath "license.xml")))
 
 Copy-Item (Join-Path $licenseFolderPath "license.xml") ".\docker\license\"
