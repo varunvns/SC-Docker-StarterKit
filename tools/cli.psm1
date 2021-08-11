@@ -239,7 +239,7 @@ function Upgrade {
     }
     if ($AddCD) {
         $hasSXA = $false
-        if ($AddSXA -or (Get-EnvValueByKey "ADD_SXA" -eq "true")) {
+        if ($AddSXA -or ((Get-EnvValueByKey "ADD_SXA") -eq "true")) {
             $hasSXA = $true
         }
         Add-CD -HasSXA $hasSXA
@@ -251,8 +251,18 @@ function Upgrade {
     }
     if ($AddSXA) {
         Write-Host "Adding SXA module to the docker preset..." -ForegroundColor Green
-        Add-SXA -HorizonAdded $AddHorizon -AddCD $AddCD
+        $hasHorizon = $false
+        if ($AddHorizon -or ((Get-EnvValueByKey "ADD_HORIZON") -eq "true")) {
+            $hasHorizon = $true
+        }
+        $hasCD = $false
+        if ($AddCD -or ((Get-EnvValueByKey "ADD_CD") -eq "true")) {
+            $hasCD = $true
+        }
+        Add-SXA -HorizonAdded $hasHorizon -AddCD $hasCD
+        Push-Location ".\docker"
         Set-EnvFileVariable "ADD_SXA" -Value "true"
+        Pop-Location
     }
     if ($AddSPS) {
         Write-Host "Adding SPS module to the docker preset..." -ForegroundColor Green
@@ -262,8 +272,11 @@ function Upgrade {
     if ($AddSMS) {
         Write-Host "Adding SMS (Sitecore Management Services) module to the docker preset..." -ForegroundColor Green
         Add-SMS
+        Push-Location ".\docker"
         Set-EnvFileVariable "ADD_SMS" -Value "true"
+        Pop-Location
     }
+    Remove-Images
     Write-Host "Upgrade is done..." -ForegroundColor Green
 }
 
@@ -637,9 +650,7 @@ function Start-Docker {
         docker-compose build
     }
     $command = "docker-compose -f docker-compose.yml -f docker-compose.override.yml"
-    if ((Get-EnvValueByKey "ADD_CD") -eq "true") {
-        $command = $command + " -f docker-compose.xp0-cd.override.yml"
-    }
+    
     if ((Get-EnvValueByKey "ADD_HORIZON") -eq "true") {
         $command = $command + " -f docker-compose.hrz.override.yml"
     }
@@ -649,8 +660,13 @@ function Start-Docker {
     if ((Get-EnvValueByKey "ADD_SPS") -eq "true") {
         $command = $command + " -f docker-compose.sps.override.yml"
     }
-    
+    if ((Get-EnvValueByKey "ADD_CD") -eq "true") {
+        $command = $command + " -f docker-compose.xp0-cd.override.yml"
+    }
     $command = $command + " up -d"
+    if ((Get-EnvValueByKey "FORCE_RECREATE") -eq "true") {
+        $command = $command + " --force-recreate"
+    }
     Write-Host "Command being executed: " $command
     Invoke-Expression $command
     Pop-Location
@@ -714,4 +730,12 @@ function Remove-DataFiles {
     Write-Host "Deleting database files from $DockerRoot\data\mssql directory..." -ForegroundColor Red
     $mssqlPath = Join-Path $DockerRoot "\data\mssql\*"
     Remove-Item $mssqlPath -Exclude ".gitkeep" -Force
+
+    $solrPath = Join-Path $DockerRoot "\data\solr\*"
+    Remove-Item $solrPath -Exclude ".gitkeep" -Force -Recurse
+}
+
+function Remove-Images {
+    $project = Get-EnvValueByKey "COMPOSE_PROJECT_NAME"
+    docker rmi -f "$project-xp1-cd"
 }

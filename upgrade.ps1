@@ -28,7 +28,7 @@ if ($isHorizonAdded -or $isSXAAdded -or $isSPSAdded -or $isSMSAdded -or $isCDAdd
     Write-Host "   - CD role" -ForegroundColor Green
   }
 }
-Write-Host "WARNING: WHILE UPGRADING THE DOCKER PRESET THE DATABASE FILES (.MDF AND .LDF) WILL BE DELETED FROM THE '/docker/data/mssql' DIRECTORY." -ForegroundColor Red
+Write-Host "WARNING: WHILE UPGRADING THE DOCKER PRESET THE DATABASE FILES (.MDF AND .LDF) WILL BE DELETED FROM THE '/docker/data/mssql' and '/docker/data/solr' DIRECTORIES." -ForegroundColor Red
 if (!(Confirm -Question "Would you like proceed?")) {
   Write-Host "Never mind..." -ForegroundColor Green
   exit 0
