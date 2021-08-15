@@ -444,7 +444,7 @@ function Add-SXA {
     $fileToUpdate = Join-Path $DestinationFolder "\build\cm\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\Spe\Spe.IdentityServer.config.disabled"" -NewName ""Spe.IdentityServer.config""`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\z.Feature.Overrides\z.SPE.Sync.Enabler.Gulp.config.disabled"" -NewName ""z.SPE.Sync.Enabler.Gulp.config""") | Set-Content -Path $fileToUpdate
 
     if ($AddCD) {
         Update-CDFiles
@@ -453,7 +453,7 @@ function Add-SXA {
     $fileToUpdate = Join-Path $DestinationFolder "\build\mssql\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\db \sxa_data`nRUN C:\DeployDatabases.ps1 -ResourcesDirectory C:\sxa_data; `Remove-Item -Path C:\sxa_data -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\db \sxa_data`nRUN C:\DeployDatabases.ps1 -ResourcesDirectory C:\sxa_data; `Remove-Item -Path C:\sxa_data -Recurse -Force; ") | Set-Content -Path $fileToUpdate
 
     $fileToUpdate = Join-Path $DestinationFolder "\build\solr-init\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
@@ -482,10 +482,10 @@ function Copy-XP0Kit {
     )
     $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
 
-    $xp0Services = "cm,id,mssql,dotnetsdk,xconnect,xdbsearchworker,xdbautomationworker,cortexprocessingworker,solr-init"
+    $xp0Services = "cm, id, mssql, dotnetsdk, xconnect, xdbsearchworker, xdbautomationworker, cortexprocessingworker, solr-init"
 
     if ($AddCD) {
-        $xp0Services = $xp0Services + ",cd"
+        $xp0Services = $xp0Services + ", cd"
     }
 
     if (Test-Path $DestinationFolder) {
@@ -497,7 +497,7 @@ function Copy-XP0Kit {
 
     New-Item $buildDirectoryPath -ItemType directory
 
-    foreach ($folder in $xp0Services.Split(",")) {
+    foreach ($folder in $xp0Services.Split(", ")) {
         $path = "$((Join-Path $foldersRoot $folder))"
         Write-Host "Copying $($path) to $buildDirectoryPath" -ForegroundColor Green
         Copy-Item $path $buildDirectoryPath -Force -Recurse
