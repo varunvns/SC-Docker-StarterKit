@@ -209,6 +209,101 @@ function Install-Kit {
     }
 }
 
+function Upgrade {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Topology,
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit",
+        [bool]$AddHorizon,
+        [bool]$AddSXA,
+        [bool]$AddSPS,
+        [bool]$AddCD,
+        [bool]$AddSMS
+    )
+    Write-Host "Upgrading your existing docker preset..." -ForegroundColor Green
+    Remove-DataFiles
+    if ($AddHorizon) {
+        Add-Horizon -DestinationFolder $DestinationFolder -StarterKitRoot $StarterKitRoot
+        Push-Location ".\docker"
+        $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
+        Set-EnvFileVariable "ADD_HORIZON" -Value "true"
+        Set-EnvFileVariable "HRZ_HOST" -Value "hrz.$($hostDomain)"
+        Pop-Location
+    }
+    if ($AddCD) {
+        $hasSXA = $false
+        if ($AddSXA -or ((Get-EnvValueByKey "ADD_SXA") -eq "true")) {
+            $hasSXA = $true
+        }
+        Add-CD -HasSXA $hasSXA
+        Push-Location ".\docker"
+        $hostDomain = Get-EnvValueByKey "HOST_DOMAIN"
+        Set-EnvFileVariable "ADD_CD" -Value "true"
+        Set-EnvFileVariable "CD_HOST" -Value "cd.$($hostDomain)"
+        Pop-Location
+    }
+    if ($AddSXA) {
+        Write-Host "Adding SXA module to the docker preset..." -ForegroundColor Green
+        $hasHorizon = $false
+        if ($AddHorizon -or ((Get-EnvValueByKey "ADD_HORIZON") -eq "true")) {
+            $hasHorizon = $true
+        }
+        $hasCD = $false
+        if ($AddCD -or ((Get-EnvValueByKey "ADD_CD") -eq "true")) {
+            $hasCD = $true
+        }
+        Add-SXA -HorizonAdded $hasHorizon -AddCD $hasCD
+        Push-Location ".\docker"
+        Set-EnvFileVariable "ADD_SXA" -Value "true"
+        Pop-Location
+    }
+    if ($AddSPS) {
+        Write-Host "Adding SPS module to the docker preset..." -ForegroundColor Green
+        Add-SPS
+        Set-EnvFileVariable "ADD_SPS" -Value "true"
+    }
+    if ($AddSMS) {
+        Write-Host "Adding SMS (Sitecore Management Services) module to the docker preset..." -ForegroundColor Green
+        Add-SMS
+        Push-Location ".\docker"
+        Set-EnvFileVariable "ADD_SMS" -Value "true"
+        Pop-Location
+    }
+    Remove-Images
+    Write-Host "Upgrade is done..." -ForegroundColor Green
+}
+
+function Add-CD {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit",
+        [bool]$HasSXA = $false
+    )
+    Write-Host "Adding CD role to the docker preset..." -ForegroundColor Green
+    $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
+    $buildDirectoryPath = "$DestinationFolder\build"
+    $path = "$((Join-Path $foldersRoot "cd"))"
+    Write-Host "Copying $($path) to $buildDirectoryPath" -ForegroundColor Green
+    Copy-Item $path $buildDirectoryPath -Force -Recurse
+    $cdCompose = "$((Join-Path $StarterKitRoot "\docker\docker-compose.xp0-cd.override.yml"))"
+    Copy-Item $cdCompose $DestinationFolder -Force
+
+    if ($HasSXA) {
+        Update-CDFiles
+    }
+}
+
 function Update-Files {
     param(
         [ValidateNotNullOrEmpty()]
@@ -317,6 +412,23 @@ function Add-Horizon {
     Copy-Item $hrzCompose $DestinationFolder -Force
 }
 
+function Update-CDFiles {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $DestinationFolder = ".\docker",
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $StarterKitRoot = ".\kit"
+    )
+    $fileToUpdate = Join-Path $DestinationFolder "\build\cd\Dockerfile"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cd\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.xp0-cd.override.yml"
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+}
+
 function Add-SXA {
     param(
         [ValidateNotNullOrEmpty()]
@@ -332,21 +444,16 @@ function Add-SXA {
     $fileToUpdate = Join-Path $DestinationFolder "\build\cm\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\Spe\Spe.IdentityServer.config.disabled"" -NewName ""Spe.IdentityServer.config""`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\z.Feature.Overrides\z.SPE.Sync.Enabler.Gulp.config.disabled"" -NewName ""z.SPE.Sync.Enabler.Gulp.config""") | Set-Content -Path $fileToUpdate
 
     if ($AddCD) {
-        $fileToUpdate = Join-Path $DestinationFolder "\build\cd\Dockerfile"
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cd\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
-        $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.xp0-cd.override.yml"
-        ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+        Update-CDFiles
     }
 
     $fileToUpdate = Join-Path $DestinationFolder "\build\mssql\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\db \sxa_data`nRUN C:\DeployDatabases.ps1 -ResourcesDirectory C:\sxa_data; `Remove-Item -Path C:\sxa_data -Recurse -Force;") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\db \sxa_data`nRUN C:\DeployDatabases.ps1 -ResourcesDirectory C:\sxa_data; `Remove-Item -Path C:\sxa_data -Recurse -Force; ") | Set-Content -Path $fileToUpdate
 
     $fileToUpdate = Join-Path $DestinationFolder "\build\solr-init\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
@@ -375,10 +482,10 @@ function Copy-XP0Kit {
     )
     $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
 
-    $xp0Services = "cm,id,mssql,dotnetsdk,xconnect,xdbsearchworker,xdbautomationworker,cortexprocessingworker,solr-init"
+    $xp0Services = "cm, id, mssql, dotnetsdk, xconnect, xdbsearchworker, xdbautomationworker, cortexprocessingworker, solr-init"
 
     if ($AddCD) {
-        $xp0Services = $xp0Services + ",cd"
+        $xp0Services = $xp0Services + ", cd"
     }
 
     if (Test-Path $DestinationFolder) {
@@ -390,7 +497,7 @@ function Copy-XP0Kit {
 
     New-Item $buildDirectoryPath -ItemType directory
 
-    foreach ($folder in $xp0Services.Split(",")) {
+    foreach ($folder in $xp0Services.Split(", ")) {
         $path = "$((Join-Path $foldersRoot $folder))"
         Write-Host "Copying $($path) to $buildDirectoryPath" -ForegroundColor Green
         Copy-Item $path $buildDirectoryPath -Force -Recurse
@@ -465,13 +572,15 @@ function Initialize-EnvFile {
         [bool]$AddHorizon,
         [bool]$AddSXA,
         [bool]$AddSPS,
-        [bool]$AddCD
+        [bool]$AddCD,
+        [bool]$AddSMS
     )
     Push-Location ".\docker"
     Set-EnvFileVariable "COMPOSE_PROJECT_NAME" -Value $SolutionName.ToLower()
     Set-EnvFileVariable "HOST_LICENSE_FOLDER" -Value ".\license"
     Set-EnvFileVariable "HOST_DOMAIN"  -Value $hostDomain
     Set-EnvFileVariable "CM_HOST" -Value "cm.$($hostDomain)"
+    Set-EnvFileVariable "TOPOLOGY" -Value $Topology
     if ($Topology -eq "xp1") {
         Set-EnvFileVariable "CD_HOST" -Value "cd.$($hostDomain)"
     }
@@ -485,6 +594,9 @@ function Initialize-EnvFile {
     }
     if ($AddSPS) {
         Set-EnvFileVariable "ADD_SPS" -Value "true"
+    }
+    if ($AddSMS) {
+        Set-EnvFileVariable "ADD_SMS" -Value "true"
     }
     if ($AddCD) {
         Set-EnvFileVariable "ADD_CD" -Value "true"
@@ -538,9 +650,7 @@ function Start-Docker {
         docker-compose build
     }
     $command = "docker-compose -f docker-compose.yml -f docker-compose.override.yml"
-    if ((Get-EnvValueByKey "ADD_CD") -eq "true") {
-        $command = $command + " -f docker-compose.xp0-cd.override.yml"
-    }
+    
     if ((Get-EnvValueByKey "ADD_HORIZON") -eq "true") {
         $command = $command + " -f docker-compose.hrz.override.yml"
     }
@@ -550,8 +660,13 @@ function Start-Docker {
     if ((Get-EnvValueByKey "ADD_SPS") -eq "true") {
         $command = $command + " -f docker-compose.sps.override.yml"
     }
-    
+    if ((Get-EnvValueByKey "ADD_CD") -eq "true") {
+        $command = $command + " -f docker-compose.xp0-cd.override.yml"
+    }
     $command = $command + " up -d"
+    if ((Get-EnvValueByKey "FORCE_RECREATE") -eq "true") {
+        $command = $command + " --force-recreate"
+    }
     Write-Host "Command being executed: " $command
     Invoke-Expression $command
     Pop-Location
@@ -604,4 +719,23 @@ function Stop-Docker {
         }
     }
     Pop-Location
+}
+
+function Remove-DataFiles {
+    param(
+        [ValidateNotNullOrEmpty()]
+        [string] 
+        $DockerRoot = ".\docker"
+    )
+    Write-Host "Deleting database files from $DockerRoot\data\mssql directory..." -ForegroundColor Red
+    $mssqlPath = Join-Path $DockerRoot "\data\mssql\*"
+    Remove-Item $mssqlPath -Exclude ".gitkeep" -Force
+
+    $solrPath = Join-Path $DockerRoot "\data\solr\*"
+    Remove-Item $solrPath -Exclude ".gitkeep" -Force -Recurse
+}
+
+function Remove-Images {
+    $project = Get-EnvValueByKey "COMPOSE_PROJECT_NAME"
+    docker rmi -f "$project-xp1-cd"
 }

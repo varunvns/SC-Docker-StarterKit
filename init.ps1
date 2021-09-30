@@ -5,7 +5,7 @@ Import-Module -Name (Join-Path $PSScriptRoot "tools\cli") -Force
 Clear-Host
 
 Write-Host "Stopping the environment..." -ForegroundColor DarkYellow
-Stop-Docker -TakeDown
+Stop-Docker -TakeDown -PruneSystem
 
 # Initialize-Folder-Structure
 
@@ -44,12 +44,12 @@ $hostDomain = "$($solutionName.ToLower()).localhost"
 $hostDomain = Read-ValueFromHost -Question "Domain hostname (press enter for $($hostDomain))" -DefaultValue $hostDomain -Required
 
 do {
-    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (press enter for .\License\)" -DefaultValue ".\License\" -Required
+    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (press enter for c:\sitecore\)" -DefaultValue "c:\sitecore\" -Required
 } while (!(Test-Path (Join-Path $licenseFolderPath "license.xml")))
 
 Copy-Item (Join-Path $licenseFolderPath "license.xml") ".\docker\license\"
 Write-Host "Copied license.xml to .\docker\license\" -ForegroundColor Magenta
-Initialize-EnvFile -SolutionName $solutionName -HostDomain $hostDomain -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $AddSPS -AddCD $addCD
+Initialize-EnvFile -SolutionName $solutionName -HostDomain $hostDomain -Topology $topology -AddHorizon $addHorizon -AddSXA $addSXA -AddSPS $AddSPS -AddCD $addCD -AddSMS $addSMS
 
 Initialize-HostNames $hostDomain
 
