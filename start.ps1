@@ -6,8 +6,8 @@ param(
 
 Import-Module -Name (Join-Path $PSScriptRoot "tools\cli") -Force
 
-Write-Host "Stopping any active and running containers before starting..." -ForegroundColor DarkYellow
 if ($StopBeforeStarting) {
+  Write-Host "Stopping any active and running containers before starting..." -ForegroundColor DarkYellow
   Stop-Docker -TakeDown -PruneSystem
 }
 
