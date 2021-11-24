@@ -44,7 +44,7 @@ COPY --from=solution \artifacts\website\ .\
 COPY --from=solution \artifacts\transforms\ \transforms\solution\
 
 # Copy role transforms
-COPY .\transforms\ \transforms\role\
+# COPY .\transforms\ \transforms\role\
 
 # Perform role transforms
-RUN C:\tools\scripts\Invoke-XdtTransform.ps1 -Path .\ -XdtPath C:\transforms\role
+# RUN C:\tools\scripts\Invoke-XdtTransform.ps1 -Path .\ -XdtPath C:\transforms\role

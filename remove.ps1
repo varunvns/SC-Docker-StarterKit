@@ -39,6 +39,10 @@ if ((Test-Path .\*.sln) -and (Confirm -Question "Would you also like to delete t
   Remove-Item .\*.sln -Force 
   Get-ChildItem directory.build.* | ForEach-Object { Remove-Item $_ -Force }
   Remove-Item .\Packages.props -Force 
+
+  if ((Test-Path ".\lib")) {
+    Remove-Item ".\lib" -Recurse -Force
+  }
 }
 
 Write-Host "Job's done.." -ForegroundColor Green
