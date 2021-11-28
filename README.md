@@ -18,7 +18,7 @@ We have made a concious effort to make the life easy and we have also got this c
 
 Some inspiration also comes from a starter kit which was available during the Sitecore Hackathon 2021 and we are very thankful - because we took some ideas from it and it made our initial part easy. 
 
-#Contributors:
+## Contributors:
 
-1. Jatin Prajapati: https://twitter.com/jatin_praj
-2. Varun Shringarpure: https://twitter.com/varunvns
+1. [Jatin Prajapati](https://twitter.com/jatin_praj)
+2. [Varun Shringarpure](https://twitter.com/varunvns)
