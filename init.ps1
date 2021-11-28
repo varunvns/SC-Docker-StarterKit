@@ -4,7 +4,7 @@ Import-Module -Name (Join-Path $PSScriptRoot "tools\cli") -Force
 
 Clear-Host
 
-Write-Host "Stopping the environment..." -ForegroundColor DarkYellow
+Write-Host "Cleaning up the system before initialize..." -ForegroundColor DarkYellow
 Stop-Docker -TakeDown -PruneSystem
 
 # Initialize-Folder-Structure
@@ -17,8 +17,6 @@ if (Test-Path ".\Directory.build.props") {
 if (Test-Path ".\Docker.pubxml") {
     Remove-Item ".\Docker.pubxml" -Force
 }
-
-# $topology = Select-SitecoreTopology
 
 $topology = "xp0"
 
@@ -41,10 +39,10 @@ Rename-SolutionFile $solutionName
 Install-SitecoreDockerTools
 
 $hostDomain = "$($solutionName.ToLower()).localhost"
-$hostDomain = Read-ValueFromHost -Question "Domain hostname (press enter for $($hostDomain))" -DefaultValue $hostDomain -Required
+$hostDomain = Read-ValueFromHost -Question "Enter Domain hostname for Solution $solutionName (Default value is $($hostDomain))" -DefaultValue $hostDomain -Required
 
 do {
-    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (press enter for c:\sitecore\)" -DefaultValue "c:\sitecore\" -Required
+    $licenseFolderPath = Read-ValueFromHost -Question "Path to a folder that contains your Sitecore license.xml file `n- must contain a file named license.xml file (Default value is c:\sitecore\)" -DefaultValue "c:\sitecore\" -Required
 } while (!(Test-Path (Join-Path $licenseFolderPath "license.xml")))
 
 Copy-Item (Join-Path $licenseFolderPath "license.xml") ".\docker\license\"

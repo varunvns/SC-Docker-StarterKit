@@ -482,10 +482,12 @@ function Copy-XP0Kit {
     )
     $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
 
-    $xp0Services = "cm, id, mssql, dotnetsdk, xconnect, xdbsearchworker, xdbautomationworker, cortexprocessingworker, solr-init"
+    #Removed spaces to avoid unnecessary Folder copy.
+    $xp0Services = "cm,id,mssql,dotnetsdk,xconnect,xdbsearchworker,xdbautomationworker,cortexprocessingworker,solr-init"
 
     if ($AddCD) {
-        $xp0Services = $xp0Services + ", cd"
+        #Removed spaces to avoid unnecessary Folder copy.
+        $xp0Services = $xp0Services + ",cd"
     }
 
     if (Test-Path $DestinationFolder) {
@@ -611,21 +613,21 @@ function Initialize-EnvFile {
     Set-EnvFileVariable "SITECORE_ID_CERTIFICATE" -Value (Get-SitecoreCertificateAsBase64String -DnsName "localhost" -Password (ConvertTo-SecureString -String $idCertPassword -Force -AsPlainText))
     Set-EnvFileVariable "SITECORE_ID_CERTIFICATE_PASSWORD" -Value $idCertPassword
     Set-EnvFileVariable "SQL_SA_PASSWORD" -Value (Get-SitecoreRandomString 19 -DisallowSpecial -EnforceComplexity)
-    Set-EnvFileVariable "SITECORE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore image version`n(10.1-ltsc2019, 10.1-1909, 10.1-2004, 10.1-20H2 - press enter for 10.1-ltsc2019)" -DefaultValue "10.1-ltsc2019" -Required)
-    Set-EnvFileVariable "SITECORE_ADMIN_PASSWORD" -Value (Read-ValueFromHost -Question "Sitecore admin password (press enter for 'b')" -DefaultValue "b" -Required)
+    Set-EnvFileVariable "SITECORE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore image version`n(10.1-ltsc2019, 10.1-1909, 10.1-2004, 10.1-20H2 - Default Value is 10.1-ltsc2019)" -DefaultValue "10.1-ltsc2019" -Required)
+    Set-EnvFileVariable "SITECORE_ADMIN_PASSWORD" -Value (Read-ValueFromHost -Question "Sitecore admin password (Default Value is 'b')" -DefaultValue "b" -Required)
 
     if (Confirm -Question "Would you like to adjust common environment settings?") {
-        Set-EnvFileVariable "SPE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore Powershell Extensions version (press enter for 6.2-1809)" -DefaultValue "6.2-1809" -Required)
+        Set-EnvFileVariable "SPE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore Powershell Extensions version (Default Value is  6.2-1809)" -DefaultValue "6.2-1809" -Required)
         Set-EnvFileVariable "REGISTRY" -Value (Read-ValueFromHost -Question "Local container registry (leave empty if none, must end with /)")
-        Set-EnvFileVariable "ISOLATION" -Value (Read-ValueFromHost -Question "Container isolation mode (press enter for default)" -DefaultValue "default" -Required)
+        Set-EnvFileVariable "ISOLATION" -Value (Read-ValueFromHost -Question "Container isolation mode (Default Value is 'default')" -DefaultValue "default" -Required)
     }
 
     if (Confirm -Question "Would you like to adjust container memory limits?") {
-        Set-EnvFileVariable "MEM_LIMIT_SQL" -Value (Read-ValueFromHost -Question "SQL Server memory limit (default: 4GB)" -DefaultValue "4GB" -Required)
-        Set-EnvFileVariable "MEM_LIMIT_SOLR" -Value (Read-ValueFromHost -Question "Solr memory limit (default: 2GB)" -DefaultValue "2GB" -Required)
-        Set-EnvFileVariable "MEM_LIMIT_CM" -Value (Read-ValueFromHost -Question "CM Server memory limit (default: 4GB)" -DefaultValue "4GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_SQL" -Value (Read-ValueFromHost -Question "SQL Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_SOLR" -Value (Read-ValueFromHost -Question "Solr memory limit (Default Value is 2GB)" -DefaultValue "2GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_CM" -Value (Read-ValueFromHost -Question "CM Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
         if ($Topology -eq "xp1") {
-            Set-EnvFileVariable "MEM_LIMIT_CD" -Value (Read-ValueFromHost -Question "CD Server memory limit (default: 4GB)" -DefaultValue "4GB" -Required)
+            Set-EnvFileVariable "MEM_LIMIT_CD" -Value (Read-ValueFromHost -Question "CD Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
         }
     }
     Pop-Location
