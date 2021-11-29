@@ -66,7 +66,3 @@ Some inspiration also comes from a starter kit which was available during the Si
 
 1. [Jatin Prajapati](https://twitter.com/jatin_praj)
 2. [Varun Shringarpure](https://twitter.com/varunvns)
-
-## References:
-1. [Setup Coveo for Dockerized Sitecore](https://jprajapati.in/2021/07/22/setup-coveo-for-dockerized-sitecore/)
-2. [Setup Publishing Service Module for Dockerized Sitecore](https://jprajapati.in/2021/07/25/setup-publishing-service-module-for-dockerized-sitecore/)
