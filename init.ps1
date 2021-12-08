@@ -18,6 +18,8 @@ if (Test-Path ".\Docker.pubxml") {
     Remove-Item ".\Docker.pubxml" -Force
 }
 
+# $topology = Select-SitecoreTopology
+
 $topology = "xp0"
 
 Write-Host "$($topology) topology applied by default. XP1 will be added in future" -ForegroundColor Magenta

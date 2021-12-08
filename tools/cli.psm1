@@ -426,7 +426,7 @@ function Update-CDFiles {
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cd\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
     $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.xp0-cd.override.yml"
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sitecore-sxa-xp1-assets:`${SITECORE_VERSION}") | Set-Content -Path $fileToUpdate
 }
 
 function Add-SXA {
@@ -444,7 +444,8 @@ function Add-SXA {
     $fileToUpdate = Join-Path $DestinationFolder "\build\cm\Dockerfile"
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#ARG_SXA_IMAGE", "ARG SXA_IMAGE") | Set-Content -Path $fileToUpdate
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#FROM_SXA_IMAGE", "FROM `${SXA_IMAGE} as sxa") | Set-Content -Path $fileToUpdate
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\Spe\Spe.IdentityServer.config.disabled"" -NewName ""Spe.IdentityServer.config""`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\z.Feature.Overrides\z.SPE.Sync.Enabler.Gulp.config.disabled"" -NewName ""z.SPE.Sync.Enabler.Gulp.config""") | Set-Content -Path $fileToUpdate
+    # ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\Spe\Spe.IdentityServer.config.disabled"" -NewName ""Spe.IdentityServer.config""`nRUN Rename-Item -Path ""c:\inetpub\wwwroot\App_Config\Include\z.Feature.Overrides\z.SPE.Sync.Enabler.Gulp.config.disabled"" -NewName ""z.SPE.Sync.Enabler.Gulp.config""") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa \module\cm\content .\`nCOPY --from=sxa \module\tools \module\tools`nRUN C:\module\tools\Initialize-Content.ps1 -TargetPath .\; `Remove-Item -Path C:\module -Recurse -Force;") | Set-Content -Path $fileToUpdate
 
     if ($AddCD) {
         Update-CDFiles
@@ -461,7 +462,7 @@ function Add-SXA {
     ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_Module", "# Add SXA module`nCOPY --from=sxa C:\module\solr\cores-sxa.json C:\data\cores-sxa.json") | Set-Content -Path $fileToUpdate
 
     $fileToUpdate = Join-Path $DestinationFolder "\docker-compose.override.yml"
-    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sxa-xp1-assets:`${SXA_VERSION}") | Set-Content -Path $fileToUpdate
+    ((Get-Content -Path $fileToUpdate -Raw) -replace "#SXA_IMAGE", "SXA_IMAGE: `${SITECORE_MODULE_REGISTRY}sitecore-sxa-xp1-assets:`${SITECORE_VERSION}") | Set-Content -Path $fileToUpdate
 
     $hrzCompose = "$((Join-Path $StarterKitRoot "\docker\docker-compose.solr-init.override.yml"))"
     Copy-Item $hrzCompose $DestinationFolder -Force
@@ -482,11 +483,9 @@ function Copy-XP0Kit {
     )
     $foldersRoot = Join-Path $StarterKitRoot "\docker\sitecore\"
 
-    #Removed spaces to avoid unnecessary Folder copy.
-    $xp0Services = "cm,id,mssql,dotnetsdk,xconnect,xdbsearchworker,xdbautomationworker,cortexprocessingworker,solr-init"
+    $xp0Services = "cm,id,mssql,mssql-init,dotnetsdk,xconnect,xdbsearchworker,xdbautomationworker,cortexprocessingworker,solr-init"
 
     if ($AddCD) {
-        #Removed spaces to avoid unnecessary Folder copy.
         $xp0Services = $xp0Services + ",cd"
     }
 
@@ -613,21 +612,21 @@ function Initialize-EnvFile {
     Set-EnvFileVariable "SITECORE_ID_CERTIFICATE" -Value (Get-SitecoreCertificateAsBase64String -DnsName "localhost" -Password (ConvertTo-SecureString -String $idCertPassword -Force -AsPlainText))
     Set-EnvFileVariable "SITECORE_ID_CERTIFICATE_PASSWORD" -Value $idCertPassword
     Set-EnvFileVariable "SQL_SA_PASSWORD" -Value (Get-SitecoreRandomString 19 -DisallowSpecial -EnforceComplexity)
-    Set-EnvFileVariable "SITECORE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore image version`n(10.1-ltsc2019, 10.1-1909, 10.1-2004, 10.1-20H2 - Default Value is 10.1-ltsc2019)" -DefaultValue "10.1-ltsc2019" -Required)
-    Set-EnvFileVariable "SITECORE_ADMIN_PASSWORD" -Value (Read-ValueFromHost -Question "Sitecore admin password (Default Value is 'b')" -DefaultValue "b" -Required)
+    Set-EnvFileVariable "SITECORE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore image version`n(10.2-ltsc2019, 10.2-1909, 10.2-2004, 10.2-20H2 - Default value is 10.2-20H2)" -DefaultValue "10.2-20H2" -Required)
+    Set-EnvFileVariable "SITECORE_ADMIN_PASSWORD" -Value (Read-ValueFromHost -Question "Sitecore admin password (press enter for 'b')" -DefaultValue "b" -Required)
 
     if (Confirm -Question "Would you like to adjust common environment settings?") {
-        Set-EnvFileVariable "SPE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore Powershell Extensions version (Default Value is  6.2-1809)" -DefaultValue "6.2-1809" -Required)
+        Set-EnvFileVariable "SPE_VERSION" -Value (Read-ValueFromHost -Question "Sitecore Powershell Extensions version (Default value is 6.2-1809)" -DefaultValue "6.2-1809" -Required)
         Set-EnvFileVariable "REGISTRY" -Value (Read-ValueFromHost -Question "Local container registry (leave empty if none, must end with /)")
-        Set-EnvFileVariable "ISOLATION" -Value (Read-ValueFromHost -Question "Container isolation mode (Default Value is 'default')" -DefaultValue "default" -Required)
+        Set-EnvFileVariable "ISOLATION" -Value (Read-ValueFromHost -Question "Container isolation mode (Default value is 'default')" -DefaultValue "default" -Required)
     }
 
     if (Confirm -Question "Would you like to adjust container memory limits?") {
-        Set-EnvFileVariable "MEM_LIMIT_SQL" -Value (Read-ValueFromHost -Question "SQL Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
-        Set-EnvFileVariable "MEM_LIMIT_SOLR" -Value (Read-ValueFromHost -Question "Solr memory limit (Default Value is 2GB)" -DefaultValue "2GB" -Required)
-        Set-EnvFileVariable "MEM_LIMIT_CM" -Value (Read-ValueFromHost -Question "CM Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_SQL" -Value (Read-ValueFromHost -Question "SQL Server memory limit (Default value is 4GB)" -DefaultValue "4GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_SOLR" -Value (Read-ValueFromHost -Question "Solr memory limit (Default value is 2GB)" -DefaultValue "2GB" -Required)
+        Set-EnvFileVariable "MEM_LIMIT_CM" -Value (Read-ValueFromHost -Question "CM Server memory limit (Default value is 4GB)" -DefaultValue "4GB" -Required)
         if ($Topology -eq "xp1") {
-            Set-EnvFileVariable "MEM_LIMIT_CD" -Value (Read-ValueFromHost -Question "CD Server memory limit (Default Value is 4GB)" -DefaultValue "4GB" -Required)
+            Set-EnvFileVariable "MEM_LIMIT_CD" -Value (Read-ValueFromHost -Question "CD Server memory limit (Default value is 4GB)" -DefaultValue "4GB" -Required)
         }
     }
     Pop-Location
